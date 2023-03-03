@@ -1,0 +1,36 @@
+%% Mochila llena (solución infactible)
+
+clear all
+clc
+
+
+c=[3 4 8 3 6 4 10 4 10 9];
+v=[6 4 3 3 3 5 9 8 5 10];
+b=26;
+
+
+%% se espera iniciar desde una solución infactible (mochila llena con todos
+%% los productos) y empezar a retirar productos por medio de un indice
+
+%% indice de sensibilidad será el volumen 
+
+U=[c' v'];
+Orden=zeros(1,2);
+
+for i=1:1:size(U,1); %ordenamiento debido al indice de sensibilidad 
+[s,j]=max(U(:,2)); %ordenamiento debido al volumen 
+Orden(i,:)=U(j,:);
+U(j,:)=[];
+end
+
+%% algoritmo para sacar productos de la mochila 
+
+x=ones(size(Orden,1),1);
+volumen=Orden(:,2)'*x
+i=size(Orden,1);
+while b<= Orden(:,2)'*x
+
+volumen=Orden(:,2)'*x
+i=i-1;
+
+end

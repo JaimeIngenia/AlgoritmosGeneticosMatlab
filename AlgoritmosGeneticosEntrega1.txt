@@ -1,0 +1,184 @@
+Definir poblacion inicial
+c = [  4    6    5   3  ];
+v = [2000 1500 3000 1000];
+
+N = 20  % Tamaño de la población
+b = 7000;
+
+X  = zeros(20,4); % Matriz con población inicial, (,cromosoma 4 bits o genes)
+FO = zeros(20,1); %vector de la función objetivo del problema
+In = zeros(20,1); % vector que representa la infactibilidad del punto
+
+
+Puntos iniciales
+X(20,:)=[ 0 0 0 1];  % Heuristica constructiva basada en volumen(ingresar productos con el menor volumen)
+X(19,:)=[ 0 1 1 0];  %heuristica constructiva basada en costo   (ingreasr productos con el mayor costo)
+X(18,:)=[ 1 0 1 0];  %ingresar un producto con respecto al mejor costo volumen, otro al volumen y otro al costo
+
+for i = 1 : 1:20  %este for generará los 16 individuos restantes
+    a = 0;        %reiniciar la variable a la cual va a contar las casillas aleatorias llenadas
+    if i <= 17    %para las primeras 16 casillas
+        while a <=1+floor(3*rand) % se define cuantas casillas se llenarán en el individuo
+            a = a + 1; % incrementando la variable "a" que llenará el vector
+            p = 1 + floor(3*rand); %número aleatorio que define que producto que entra en el vector solución
+            if X(i,p) == 0 %Si la casilla a llenar es realmente 0 (se asegura no ingresar un producto nuevamente)
+                X(i,p) = 1; % poner casilla en 1
+            else  % si no
+                a = a - 1;  %descontar una casilla en la variable "a" debido a que en esa casilla ya se había puesto un 1 
+            end
+        end
+    end
+    FO(i,1) = X(i,:)*c'  % vector que representa el valor de la función objetivo
+    In(i,1) = X(i,:)*v'-b;  %vector que representa el valor de la infactibilidad del punto
+    a = In<0;               %Extrae los puntos que no son infatibles
+    In(a) = 0;              % Vuelve cero los puntos que no son infactibles
+end
+
+Seleccion
+
+ Mirar cuandos hijos tiene y como se van a distribuir
+
+Crear la función de adaptabilidad
+alpha = 0.82;
+Fadap = FO - alpha * In
+
+Nuero de descendientes de cda padre
+%Ndes = Fadap / (sum(Fadap)/N);
+
+Vector con el número de descendientes (parte entera)
+%des = floor(Ndes);
+
+1 metodo selectividad
+% 
+% res = Ndes-des;  % valores restantes para distribuir en los padres(parte decimal)
+% 
+% for j = sum(des) : 1 : N-1 
+%     [v , i] = max(res); % se escoje el mayor residuo y extrae su posición (i)
+%     des(i,1) = des(i,1) +1; % se suma en la posición i un nuevo hijo
+%     res(i,1) = 0; % se iguala la casilla res a cero para que no tenga oportunidad de tener un nuevo hijo
+% end
+% 
+% des;
+
+
+2 metodo por ruleta
+% 
+% res=360*res/sum(res) %se reparte en porciones (ruleta) los residuos 
+% for i=2:1:N           % se suman los espacios de la ruleta y queda distribuido en los 360 grados
+%     res(i,1)=res(i,1)+res(i-1,1)
+% end    
+% 
+% while sum(des)<N   % mientras los 20 descendientes no sean asignados 
+%    ruleta=360*rand;   % gira la ruleta 
+%    i=2;     % empezar en 2 para evitar problemas con asignación de vector 
+%    while i < N     % hacer en todas las casillas de la ruleta 
+%       
+%        if ruleta>=res(i-1,1) && ruleta<res(i,1)  % si cayó entre las casillas (i-1) y la (i) entonces asignar descendiente a (i-1)
+%            des(i-1,1)=des(i-1,1)+1; % incrementar descendiente a des en la casilla i-1
+%            i=N;   % terminar el ciclo while colocando i =N
+%        end
+%        i=i+1; % incrementar la variable i (esta variable recorre las casillas de la ruleta)
+%    end
+%          
+% end
+% 
+% des
+
+
+3 metodo por torneo
+k=4;  %número de individuos de la competencia
+%%
+
+v=zeros(k,2); %matriz para guardar la competencia 
+des=zeros(N,1); %matriz con los descendientes
+
+while sum(des)<N % mientras no se asignen todos los descendientes 
+    i=1;
+  while i<=k      % repetir ciclo para escojencia de padres que entran a torneo
+     
+   a=floor((N-1)*rand+1);  % se escoje un padre aleatoriamente
+    
+   if a~= v(:,2) % para evitar que se repita al padre en el torneo 
+       v(i,:)=[Fadap(a,1) a];  % se guarda en un vector los padres (función de adaptación) y posición del padre
+       i=i+1;    % si no se repite el padre entonces que se pase a escojer un nuevo padre para el torneo
+   end
+   
+  end
+
+  [r j]=max(v(:,1)); % se extrae el mejor padre del torneo 
+  
+  des(v(j,2),1)=des(v(j,2),1)+1; %sumar un descendiente al padre ganador del torneo 
+  
+end
+ 
+des
+
+
+Recombinacion
+Xh=zeros(N,4);  
+%% proceso de ordenamiento de hijos (mayor a menor número de hijos)
+
+ j=0;   % se define un contador que buscará en el vector de descendientes (des) creado en la selección 
+ o=0;   % contador de número de hijos definidos casilla a casilla por la selección (vector des)
+ Datos=[]; %matriz que guardará los índices de los hijos (antigua posición y los clasifica de mejor a peor) 
+ [y z]=max(des);  % se define el máximo numero de hijos en des y lo guarda como (y- número de hijos, z- posición en el vector inicial)
+     while j< N   % mientras la variable que repita al padre sea menor que el número de descendientes
+        j=j+1; 
+        
+       if max(des)==0  % si se encuentra que el maximo es cero es debido a que todos los hijos ya estan asignados
+           break   %terminar bucle
+       else    %si no 
+       if o==y    % si la cuenta del número de descendientes asignado a un padre es igual al contador (debido a que ya se asignaron los hijos en la matriz)
+          o=0;   % reiniciar el contador 
+          des(z,1)=0;   % hacer el numero asignado de descendiente a cero (para poder llamar al siguente número mayor en ese vector)
+       end
+       end 
+       o=o+1;    %incrementar el contador de hijos asignados 
+       [y z]=max(des);   %extraer los datos del máximo descendiente 
+       Datos(j,:)=[y z];   % se guarda en la matriz Datos (todos los valores de los descendientes asignados)
+      
+      Xh(j,:)=X(z,:);   % se copia al hijo determinado en la matriz Xh
+  end
+     
+     [Xh Datos]
+
+Ya tenemos a los padres, ahora el proceso de recombinacion min 9:30 video 11
+t = 4 ; % peces
+x=[];
+i=0;
+ while size(Xh,1)~=0  % hasta que la matriz de padres se vuelva cero 
+      
+      padre1=Xh(1,:);   % se escoje el primer hijo 
+      
+      a=floor((size(Xh,1)-1)*rand+2);  % se escoje el segundo padre aleatoriamente (lo ideal seria que se escoja un padre diferente)
+      
+      padre2=Xh(a,:);  % se escoje un padre aleatoriamente
+      
+      Xh(a,:)=[];  % se borran los cromosomas de los padres 
+      Xh(1,:)=[];  % se borran los cromosomas de los padres 
+      
+           
+      % escojer un punto aleatorio de recombinación para los padres 1 y 2 
+      i=i+1;
+      a=floor((t-1)*rand+1);
+      x(i,:)=[padre1(1,1:a) padre2(1,a+1:t)];
+      i=i+1;
+      x(i,:)=[padre2(1,1:a) padre1(1,a+1:t)];
+          
+  end
+     X=x   %% EM ESTE PUNTO YA ESTÁN TODOS LOS PADRES RECOMBINADOS
+   
+%% crear el vector de funcion de costo e infactibilidad 
+
+
+Error tamaño de la matriz al recorrerla
+
+for i=1:1:N
+  
+   FO(i,1)=X(i,:)*c';  % vector que representa el valor de la función objetivo
+   In(i,1)=X(i,:).*v'-b;  % vector que representa el valor de la infactibilidad del punto 
+   a=In<0;      % extrae los puntos que no son infactibles 
+   In(a)=0;    % vuelve cero los puntos que no son infactibles
+end
+    
+ 

@@ -1,0 +1,113 @@
+%% descomposición y división 
+%% Problema de la mochila 
+
+%% se puede hacer descomposicion y luego division O division y luego
+%% descomposición 
+
+
+%% Aplicación de descomposición
+
+clear all
+clc
+
+
+c=[3 4 8 3 6 4 10 4 10 9];
+v=[6 4 3 3 3 5 9 8 5 10];
+b=26;
+cSv=c./v;
+
+%% indicador de sensibilidad el costo/volumen del producto 
+
+cd=cSv/max(cSv);     %normalización del indicador de sensibilidad 
+U=[c',v',cd']
+k1=0;
+k2=0;
+k3=0;
+atractivos=zeros(1,3);   % categorias de los productos 
+medianamente=zeros(1,3);
+poco=zeros(1,3);
+
+while size(U,1)>=1     % ciclo para descomposición en tres categorias 
+             
+    if U(1,3)>0.9             % los valores para la division de los productos debe ser modificado para cada problema
+    k1=k1+1;                   %indice para llenar uno a uno las casillas de los productos 
+    atractivos(k1,:)=U(1,:);  %los atractivos entran directo a la mochila 
+    U(1,:)=[];
+    end
+    
+    if size(U,1)~=0  %% para evitar error cuando se vacia la matriz U
+        
+    if (U(1,3)>=0.3 && U(1,3)<=0.9)
+    k2=k2+1;   
+    medianamente(k2,:)=U(1,:);   %en este se correrá el método de descomposición 
+    U(1,:)=[];
+    end
+    end
+     
+    if size(U,1)~=0
+    if U(1,3) < 0.3
+    k3=k3+1;    
+    poco(k3,:)=U(1,:);    % estos productos no se ingresan a la mochila 
+    U(1,:)=[];
+    end
+    end
+   
+    
+end
+
+bnuevo=b-sum(atractivos(:,2));  %% nuevo valor de las restricción para el volumen, se espera correr un método exacto
+
+
+%% aplicación de algoritmo de división 
+
+% se dividirá en dos mochilas más pequeñas ( de que tamaño deberian ser?)
+% (cuantos productos deberian tener? ) buscar bin packing 
+
+%% se dividirá la mochila en dos submochilas de la mitad del espacio de la
+%% mochila grande y los productos 
+
+bnuevo=b/2;        %   volumen el cual será la nueva restricción de los dos volumenes
+Ua=medianamente;       %   se organizan los vectores costo y volumen en una matriz (productos para la mochila 1)
+Ub=zeros(1,3);   %   matriz que se llenará con los productos para llenar la segunda mochila 
+
+for i=1:1:floor((size(medianamente(:,1),1)/2))+1  % se dividiran los productos por la mitad (en este ejemplo no se cumple)
+    
+    d=floor((size(Ua,1)-1)*rand)+1;  % se escojen aleatoriamente los productos (RAND)
+    
+    Ub(i,:)=Ua(d,:); % se llena la matriz para tener aleatoriamente los productos 
+    Ua(d,:)=[];   % se borran los productos debido a que estos fueron seleccionados para la mochila 2
+end
+
+%% algoritmo para llenar la mochila 1 
+%% el índice de sensibilidad será el costo 
+
+OrdenA=zeros(1,3);
+
+for i=1:1:(size(Ua',1))      %ordenamiento debido al indice de sensibilidad 
+[s,j]=max(Ua(:,1));           %ordenamiento debido al costo 
+OrdenA(i,:)=Ua(j,:);          % el valor más grande se guarda en la matriz Ordenada respecto al indice de sensibilidad
+Ua(j,:)=[];                   % borrar la fila de la matriz desordenada 
+end
+
+
+%% llenar la mochila 1 con cada producto puesto en la matriz ordenada con
+%% respecto al indice de sensibilidad
+
+x1=zeros((size(Ua',1)),1);             % variable que indica si el producto entra o está fuera de la mochila
+k1=0;                                   % agregador de productos
+while k1< size(Ua,1)                 % recorrer todos los productos    
+ k1=k1+1;                              % agregar un nuevo producto 
+x1(k1,1)=1;                              % se agrega un producto
+
+if bres < OrdenA(:,2)'*x1                 % si al agregar el proximo producto excede el volumen, entonces que lo elimine
+x1(k1,1)=0; 
+end
+end
+
+costo1=OrdenA(:,1)'*x1;
+volumen1=OrdenA(:,2)'*x1;
+
+
+
+
+
